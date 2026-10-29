@@ -1,0 +1,44 @@
+# CMake and Ninja build output
+/build/
+/cmake-build-*/
+/out/build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+build.ninja
+.ninja_deps
+.ninja_log
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Compiled binaries and intermediate files
+*.obj
+*.o
+*.lib
+*.a
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.pch
+*.gch
+
+# Test and diagnostic output
+Testing/
+*.log
+*.dmp
+*.stackdump
+
+# Local environment and editor files
+.env
+.env.*
+!.env.example
+*.swp
+*.swo
+*~
