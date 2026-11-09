@@ -232,29 +232,29 @@ namespace aegis
 
 	// Ecnrypt catalog
 
-	EncryptedCatalog encrypt_catalog(const VaultHeader& header, const SecureBuffer& key, std::span<const CatalogInput> entries)
+	EncryptedCatalog encrypt_catalog_views(const VaultHeader& header, const SecureBuffer& key, std::span<const CatalogViewInput> entries)
 	{
 		if (entries.size() > MAX_CATALOG_ENTRIES)
 		{
-			throw std::invalid_argument("Catalog contains too many entries.");
+			throw std::invalid_argument("Catlog contains too many entries.");
 		}
-
-		// Start with schema version and entry count
 
 		std::size_t plaintext_size = 6;
 
+		// Validate names and identifiers
+
 		for (std::size_t i = 0; i < entries.size(); ++i)
 		{
-			const CatalogInput& entry = entries[i];
+			const CatalogViewInput& entry = entries[i];
 
-			const std::span<const unsigned char> name(entry.name.data(), entry.name.size());
+			const auto name = entry.name;
 
 			if (!valid_name(name))
 			{
 				throw std::invalid_argument("Invalid catalog entry name.");
 			}
 
-			// Reject duplicate ids and duplicate names
+			// Reject duplicate names and identifiers
 
 			for (std::size_t j = 0; j < i; ++j)
 			{
@@ -263,9 +263,7 @@ namespace aegis
 					throw std::invalid_argument("Duplicate credential identifier.");
 				}
 
-				const std::span<const unsigned char> other_name(entries[j].name.data(), entries[j].name.size());
-
-				if (names_equal(name, other_name))
+				if (names_equal(name, entries[j].name))
 				{
 					throw std::invalid_argument("Duplicate catalog entry name.");
 				}
@@ -274,14 +272,10 @@ namespace aegis
 			plaintext_size += 16 + 2 + name.size() + CATALOG_HASH_SIZE;
 		}
 
-		// Protects against accidental layout mistakes
-
 		if (plaintext_size > MAX_CATALOG_PLAINTEXT_BYTES)
 		{
 			throw std::invalid_argument("Catalog exceeds maximum size.");
 		}
-
-		// Keep decrypted names and hashes in protected memory
 
 		SecureBuffer plaintext(plaintext_size);
 
@@ -291,25 +285,19 @@ namespace aegis
 
 		write_u32(plaintext.data(), offset, static_cast<std::uint32_t>(entries.size()));
 
-		for (const CatalogInput& entry : entries)
-		{
-			// Write credential identifier
+		// Serialize Entries
 
+		for (const CatalogViewInput& entry : entries)
+		{
 			std::copy(entry.record.id.begin(), entry.record.id.end(), plaintext.data() + offset);
 
 			offset += entry.record.id.size();
 
-			// Write name length
-
 			write_u16(plaintext.data(), offset, static_cast<std::uint16_t>(entry.name.size()));
 
-			// Write encrypted catalog only name plaintext
-
-			std::copy_n(entry.name.data(), entry.name.size(), plaintext.data() + offset);
+			std::copy(entry.name.begin(), entry.name.end(), plaintext.data() + offset);
 
 			offset += entry.name.size();
-
-			// Hash the corresponding record
 
 			const RecordHash hash = hash_credential_record(entry.record);
 
@@ -318,8 +306,6 @@ namespace aegis
 			offset += hash.size();
 		}
 
-		// Authenticate the header and catalog record type
-
 		const CatalogAad aad = build_catalog_aad(header);
 
 		EncryptedCatalog catalog;
@@ -327,6 +313,20 @@ namespace aegis
 		catalog.encrypted = encrypt_record(key, plaintext, std::span<const unsigned char>(aad));
 
 		return catalog;
+	}
+
+	EncryptedCatalog encrypt_catalog(const VaultHeader& header, const SecureBuffer& key, std::span<const CatalogInput> entries)
+	{
+		std::vector<CatalogViewInput> views;
+
+		views.reserve(entries.size());
+
+		for (const CatalogInput& entry : entries)
+		{
+			views.push_back(CatalogViewInput(std::span<const unsigned char>(entry.name.data(), entry.name.size()), entry.record));
+		}
+
+		return encrypt_catalog_views(header, key, std::span<const CatalogViewInput>(views));
 	}
 
 	// DecryptedCatalog constructor

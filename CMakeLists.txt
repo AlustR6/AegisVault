@@ -33,8 +33,8 @@ find_package(GTest CONFIG REQUIRED)
 # Aegis Core Library
 # ============================================================
 
-# Only application implementation files belong here.
-# Never add test_*.cpp files to aegis_core.
+# Only production implementation files belong here.
+# Test files must be added exclusively to aegis_tests.
 
 add_library(aegis_core STATIC
     src/secure_buffer.cpp
@@ -46,6 +46,7 @@ add_library(aegis_core STATIC
     src/vault_credential.cpp
     src/vault_catalog.cpp
     src/vault_repository.cpp
+    src/vault_service.cpp
 )
 
 target_include_directories(aegis_core
@@ -68,7 +69,7 @@ target_link_libraries(aegis_core
 
 
 # ============================================================
-# Prevent Test Files From Being Added to Core
+# Validate Core Sources
 # ============================================================
 
 get_target_property(AEGIS_CORE_SOURCES aegis_core SOURCES)
@@ -103,7 +104,7 @@ target_link_libraries(aegis_vault
 
 
 # ============================================================
-# GoogleTest Executable
+# GoogleTest Configuration
 # ============================================================
 
 enable_testing()
@@ -120,6 +121,7 @@ add_executable(aegis_tests
     tests/test_vault_credential.cpp
     tests/test_vault_catalog.cpp
     tests/test_vault_repository.cpp
+    tests/test_vault_service.cpp
 )
 
 target_link_libraries(aegis_tests

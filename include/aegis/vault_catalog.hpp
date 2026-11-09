@@ -33,6 +33,13 @@ namespace aegis
 		const EncryptedCredentialRecord& record;
 	};
 
+	struct CatalogViewInput
+	{
+		std::span<const unsigned char> name;
+
+		const EncryptedCredentialRecord& record;
+	};
+
 	struct EncryptedCatalog
 	{
 		EncryptedBlob encrypted;
@@ -89,6 +96,8 @@ namespace aegis
 	[[nodiscard]] RecordHash hash_credential_record(const EncryptedCredentialRecord& record);
 
 	// Catalog encryption
+
+	[[nodiscard]] EncryptedCatalog encrypt_catalog_views(const VaultHeader& header, const SecureBuffer& key, std::span<const CatalogViewInput> entries);
 
 	[[nodiscard]] EncryptedCatalog encrypt_catalog(const VaultHeader& header, const SecureBuffer& key, std::span<const CatalogInput> entries);
 
